@@ -8,10 +8,16 @@
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.17",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "livewire/livewire": "^3.6.4",
+        "livewire/volt": "^1.7.0"
     },
     "require-dev": {
+        "barryvdh/laravel-dompdf": "*",
         "fakerphp/faker": "^1.23",
+        "google/apiclient": "*",
+        "laravel/boost": "^2.10",
+        "laravel/breeze": "*",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
@@ -73,7 +79,7 @@
         }
     },
     "config": {
-        "optimize-autoloader": true,
+        "optimize-autoloader": false,
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {

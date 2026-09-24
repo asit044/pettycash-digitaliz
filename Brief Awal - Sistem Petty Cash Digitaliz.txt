@@ -1,0 +1,233 @@
+    
+    
+    
+    
+    ​PROJECT BRIEF​
+​Sistem Petty Cash & Reimbursement Internal Digitaliz​
+​1. Latar Belakang & Masalah​
+​Proses pengajuan​​reimbursement​​dan kas kecil (​petty cash​) di internal Digitaliz masih berjalan​
+​manual dan berpindah-pindah kanal: WhatsApp, Notion, Google Drive, serta konfirmasi berulang​
+​satu per satu.​
+​Masalah yang muncul:​
+​No​
+
+​Masalah​
+
+​Dampak​
+
+​1​
+
+​Pengajuan masuk lewat chat personal/grup​
+
+​Mudah tenggelam, tidak ada antrean​
+​resmi​
+
+​2​
+
+​Invoice & bukti transfer dikirim terpisah​
+
+​Admin merapikan file ke Drive secara​
+​manual​
+
+​3​
+
+​Kode & uraian anggaran diisi belakangan​
+
+​Rekap bulanan sering harus dikoreksi​
+​ulang​
+
+​4​
+
+​Tidak ada status yang terlihat bersama​
+
+​Pengaju bertanya berulang “sudah cair​
+​belum?”​
+
+​5​
+
+​Rekap disusun manual di spreadsheet​
+
+​Boros waktu, rawan salah ketik​
+
+​6​
+
+​Tidak ada jejak siapa menyetujui apa &​
+​kapan​
+
+​Sulit dipertanggungjawabkan​
+
+​2. Tujuan Project​
+​Membangun aplikasi/portal internal sederhana yang menyatukan seluruh alur pengajuan ke satu​
+​tempat: pengajuan oleh tim, penyimpanan berkas otomatis ke Google Drive, validasi Admin,​
+​notifikasi WhatsApp otomatis, pemrosesan Finance, pelacakan status, hingga ekspor laporan (CSV​
+​& PDF) yang siap ditandatangani.​
+​Dikatakan berhasil apabila:​
+​●​ ​Seluruh pengajuan masuk lewat sistem, bukan lagi lewat WhatsApp personal.​
+​●​ ​Admin tidak perlu lagi merapikan berkas atau menyusun rekap secara manual.​
+​●​ ​Pengaju bisa memantau statusnya sendiri tanpa bertanya.​
+​3. Ruang Lingkup​
+​Masuk lingkup:​​pengajuan, unggah berkas ke Google Drive, validasi & pemberian kode anggaran​
+​oleh Admin, notifikasi WhatsApp, pemrosesan Finance, pelacakan status, ekspor CSV & PDF, arsip​
+​riwayat.​
+​Di luar lingkup:​​integrasi rekening bank/auto-transfer, persetujuan berjenjang banyak level,​
+​perhitungan pajak atau jurnal akuntansi, aplikasi mobile native, multi-perusahaan.​
+​4. Aktor & Hak Akses​
+​Aktor​
+
+​Boleh​
+
+​Tidak boleh​
+
+​Pengaju(karyawan/ti​
+​m)​
+
+​Membuat pengajuan, mengunggah​
+l​ampiran, melihat status & riwayat​
+​miliknya sendiri​
+
+​Melihat atau mengisi kode​
+​anggaran; melihat​
+​pengajuan orang lain​
+
+​Aktor​
+
+​Boleh​
+
+​Tidak boleh​
+
+​Admin​
+
+​Melihat semua pengajuan, mengisi kode​
+​& uraian anggaran, menyetujui/meminta​
+​revisi/menolak, mengekspor laporan​
+
+​Menandai pengajuan​
+​sebagai sudah dicairkan​
+
+​Finance​
+
+​Memproses pencairan, mengunggah​
+​bukti transfer resmi, menandai selesai,​
+​mengekspor laporan​
+
+​Mengubah kode anggaran​
+​atau menyetujui pengajuan​
+
+​Head of Digitaliz​
+
+​Melihat laporan & ringkasan​
+
+​—​
+
+​Aturan kunci:​​kolom kode & uraian anggaran​​dikunci khusus untuk Admin​. Pengaju sama sekali​
+​tidak melihat field ini.​
+​5. Alur Kerja Sistem​
+​1.​​Tim Pengaju​
+
+​: input data, unggah Invoice & Bukti TF (jika ada), lalu submit.​
+
+​2.​​Integrasi Google Drive​
+
+​: sistem otomatis membuat/mencari folder & mengunggah dokumen​
+​secara terpusat.​
+
+​3.​​Admin​
+
+​: menerima notifikasi WhatsApp, me-review, mengisi kode/uraian​
+​anggaran (dikunci dari tim), lalu memilih: Approve / Minta Revisi​
+​Tolak.​
+
+​4.​​Tim Finance​
+
+​: menerima notifikasi WhatsApp saat disetujui, memproses pencairan,​
+​dan mengunggah bukti transfer resmi.​
+
+​5.​​Selesai​
+
+​: sistem mengirim notifikasi WhatsApp ke pengaju; data masuk arsip​
+​dan siap diekspor (CSV/PDF).​
+
+​Status yang perlu ada​
+​Finance → Selesai.​
+
+​:​​Menunggu Validasi Admin → Perlu Revisi / Ditolak / Diproses​
+
+​6. Use Case & Kebutuhan Fitur​
+​Use Case 1 — Pengajuan oleh Tim (Requester)​
+​●​ ​Aktor: Karyawan/tim Digitaliz.​
+​●​ ​Fungsi: Form pengajuan mandiri yang terpusat.​
+​●​ ​Data yang diisi tim: nominal, keterangan keperluan, serta beberapa dokumen pendukung​
+​bila diperlukan (Invoice/Struk dan Bukti Transfer awal).​
+​●​ ​Batasan: tim​​tidak perlu​​memilih atau memasukkan kategori/kode anggaran sama sekali.​
+​Use Case 2 — Integrasi Google Drive (Auto-Folder & Auto-Upload)​
+​●​ ​Fungsi: saat tim menekan submit beserta lampiran, sistem otomatis terhubung ke Google​
+​Drive.​
+​●​ ​Mekanisme folder: sistem membuat/mengelompokkan penamaan folder otomatis dan​
+​terpusat untuk setiap pengajuan, sehingga Admin tidak perlu merapikan berkas manual.​
+​●​ ​Catatan: penamaan folder/berkas sebaiknya memuat nomor pengajuan agar mudah​
+​ditelusuri — silakan usulkan konvensinya.​
+​Use Case 3 — Validasi, Tagging Admin & Notifikasi ke Admin​
+​●​ ​Aktor: Admin & sistem WA Gateway.​
+​●​ ​Sistem mengirim notifikasi WhatsApp otomatis ke Admin saat ada pengajuan baru.​
+​●​ ​Admin membuka panel untuk memeriksa data, lalu mengetik/memilih kode dan uraian​
+​anggaran.​
+
+​●​ ​Admin memilih salah satu tindakan: Approve, Minta Revisi (disertai alasan), atau Tolak​
+​(disertai alasan).​
+​●​ ​Aturan: pengajuan tidak boleh bisa di-approve sebelum kode anggaran terisi; setiap​
+​tindakan tercatat (siapa, kapan, apa).​
+​Use Case 4 — Notifikasi Otomatis ke Finance & Pemrosesan​
+​●​ ​Aktor: Tim Finance & sistem WA Gateway.​
+​●​ ​Begitu Admin menyetujui, sistem langsung mengirim notifikasi WhatsApp otomatis ke tim​
+​Finance bahwa ada pengajuan siap diproses.​
+​●​ ​Finance memproses pencairan lalu mengunggah bukti transfer resmi ke dalam sistem.​
+​●​ ​Aturan: status tidak bisa menjadi “Selesai” tanpa bukti transfer resmi terunggah.​
+​Use Case 5 — Tracking Status & Notifikasi ke Pengaju​
+​●​ ​Aktor: Pengaju.​
+​●​ ​Status pengajuan dapat dipantau (Menunggu Validasi Admin → Diproses Finance →​
+​Selesai), lengkap dengan linimasa waktunya.​
+​●​ ​Sistem otomatis mengirim WhatsApp ke pengaju saat status berubah, termasuk bila diminta​
+​revisi atau ditolak beserta alasannya.​
+​Use Case 6 — Export Laporan (CSV & PDF)​
+​●​ ​Aktor: Admin / Finance.​
+​●​ ​Sistem menyediakan ekspor rekap pengajuan ke CSV (untuk diolah lanjut di spreadsheet)​
+​dan PDF (untuk laporan formal/cetak), dengan penyaringan berdasarkan​
+​periode/status/kode anggaran.​
+​●​ ​Khusus format PDF, dokumen rekap wajib mencantumkan blok tanda tangan “Mengetahui:​
+​Pak Hengki (Head of Digitaliz)” secara otomatis, agar siap dipakai untuk​
+​pertanggungjawaban formal.​
+​●​ ​Catatan: nama dan jabatan penanda tangan sebaiknya dapat diubah melalui pengaturan,​
+​bukan ditulis permanen di dalam kode.​
+​Use Case 7 — Arsip Otomatis​
+​●​ ​Sistem merekap otomatis riwayat pengajuan, nominal, kode dari Admin, dan tautan berkas​
+​Google Drive ke dalam basis data — menggantikan rekap manual.​
+​7. Notifikasi yang Harus Terkirim​
+​Kejadian​
+
+​Penerima​
+
+​Pengajuan baru masuk​
+
+​Admin​
+
+​Diminta revisi / ditolak​
+
+​Pengaju (beserta alasannya)​
+
+​Disetujui Admin​
+
+​Finance​
+
+​Pencairan selesai​
+
+​Pengaju​
+
+​8. Yang Diharapkan dari Tim Magang​
+​Sebelum mulai coding, silakan susun dan presentasikan terlebih dahulu:​
+​●​ ​Rancangan alur layar (wireframe) untuk masing-masing peran.​
+​●​ ​Usulan struktur data dan daftar status.​
+​●​ ​Usulan teknologi yang akan dipakai beserta alasannya.​
+​●​ ​Rencana pengerjaan dan pembagian tugas selama masa magang.​
+​●​ ​Bagian mana yang dikerjakan lebih dulu bila waktu tidak cukup untuk semuanya.​
+
+

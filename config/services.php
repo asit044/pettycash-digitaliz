@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'fonnte' => [
+        'token' => env('FONNTE_TOKEN'),
+        'url' => env('FONNTE_URL', 'https://api.fonnte.com/send'),
+    ],
+
+    'google' => [
+        'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
+        'drive_root_folder_id' => env('DRIVE_ROOT_FOLDER_ID'),
+    ],
+
 ];
