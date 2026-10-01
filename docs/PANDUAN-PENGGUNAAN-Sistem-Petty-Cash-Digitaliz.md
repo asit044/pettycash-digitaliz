@@ -327,4 +327,4 @@ Benar — *Ditolak* adalah status final. **Perlu Revisi** adalah satu-satunya ja
 
 ---
 
-© Digitaliz — Sistem Petty Cash & Reimbursement Internal.
+© Digitaliz — Sistem Petty Cash & Reimbursement Internal
