@@ -27,6 +27,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('reports', 'pages.reports.index')
         ->middleware('can:view-any-requests')
         ->name('reports.index');
+    Volt::route('head', 'pages.head.index')
+        ->middleware('can:view-any-requests')
+        ->name('head.index');
     Volt::route('settings', 'pages.settings.index')
         ->middleware('can:manage-settings')
         ->name('settings.index');

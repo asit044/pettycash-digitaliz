@@ -53,7 +53,19 @@ new class extends Component
                             </x-nav-link>
                         @endif
 
-                        @if (in_array(auth()->user()->role, ['admin', 'finance', 'head']))
+                        @if (auth()->user()->isHead())
+                            <x-nav-link :href="route('head.index')" :active="request()->routeIs('head.index')" wire:navigate>
+                                {{ __('Monitoring') }}
+                            </x-nav-link>
+                        @endif
+
+                @if (auth()->user()->isHead())
+                    <x-responsive-nav-link :href="route('head.index')" :active="request()->routeIs('head.index')" wire:navigate>
+                        {{ __('Monitoring') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                @if (in_array(auth()->user()->role, ['admin', 'finance', 'head']))
                             <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.index')" wire:navigate>
                                 {{ __('Laporan') }}
                             </x-nav-link>

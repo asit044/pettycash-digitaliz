@@ -25,6 +25,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function submit(): void
     {
+        abort_unless(auth()->user()->can('create-requests'), 403);
+
         $this->validate();
 
         $uploads = [];

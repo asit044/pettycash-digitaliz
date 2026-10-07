@@ -8,9 +8,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RequestFileController extends Controller
 {
-    public function __invoke(RequestFile $file): StreamedResponse
+    public function __invoke(string $id, RequestFile $file): StreamedResponse
     {
         abort_unless(auth()->user()->can('download-request-file', $file), 403);
+
+        abort_unless((int) $id === (int) $file->request_id, 404);
 
         abort_if($file->request === null || $file->storage_path === null, 404);
 

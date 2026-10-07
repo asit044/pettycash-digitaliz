@@ -9,6 +9,7 @@ use App\Models\BudgetCode;
 use App\Models\PettyCashRequest;
 use App\Models\User;
 use App\Services\PettyCashService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -176,8 +177,8 @@ class PettyCashFlowTest extends TestCase
                 $request,
                 UploadedFile::fake()->create('x.pdf', 100, 'application/pdf'),
             );
-            $this->fail('Expected ValidationException was not thrown.');
-        } catch (ValidationException) {
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException) {
             $this->assertTrue(true);
         }
 

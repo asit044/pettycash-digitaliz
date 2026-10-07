@@ -18,7 +18,7 @@
 </head>
 <body>
     <h1>Rekap Pengajuan Petty Cash &amp; Reimbursement</h1>
-    <p class="muted">{{ $companyName }} · Periode: {{ $from ?: '-' }} s/d {{ $to ?: '-' }}</p>
+    <p class="muted">{{ $companyName }} · Periode: {{ $from ?: '-' }} s/d {{ $to ?: '-' }} · Dicetak: {{ now()->format('d-m-Y H:i') }}</p>
 
     <table>
         <thead>
@@ -35,6 +35,11 @@
             </tr>
         </thead>
         <tbody>
+            @if ($rows->isEmpty())
+                <tr>
+                    <td colspan="9">Tidak ada data pada periode/filter ini.</td>
+                </tr>
+            @endif
             @foreach ($rows as $index => $item)
                 <tr>
                     <td>{{ $index + 1 }}</td>

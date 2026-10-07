@@ -7,15 +7,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "google/apiclient": "^2.20",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^3.6.4",
         "livewire/volt": "^1.7.0"
     },
     "require-dev": {
-        "barryvdh/laravel-dompdf": "*",
         "fakerphp/faker": "^1.23",
-        "google/apiclient": "*",
         "laravel/boost": "^2.10",
         "laravel/breeze": "*",
         "laravel/pail": "^1.2.5",

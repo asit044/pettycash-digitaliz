@@ -10,7 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
-
+use Illuminate\Validation\Rule;
 new #[Layout('layouts.app')] class extends Component
 {
     use WithFileUploads;
@@ -26,6 +26,12 @@ new #[Layout('layouts.app')] class extends Component
 
     #[Validate('required|string|max:2000')]
     public string $reason = '';
+
+    #[Validate('nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp')]
+    public $revisionInvoice;
+
+    #[Validate('nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp')]
+    public $revisionProof;
 
     #[Validate('required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp')]
     public $officialReceipt;
@@ -59,11 +65,32 @@ new #[Layout('layouts.app')] class extends Component
 
     public function resubmit(): void
     {
-        $this->validate(['editDescription' => ['required', 'string', 'max:2000']]);
+        abort_unless(
+            auth()->user()->isRequester() && (int) $this->item->requester_id === (int) auth()->id(),
+            403
+        );
 
-        $request = app(PettyCashService::class)->resubmit($this->item, auth()->user(), $this->editDescription);
+        $this->validate([
+            'editDescription' => ['required', 'string', 'max:2000'],
+            'revisionInvoice' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,webp'],
+            'revisionProof' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,webp'],
+        ]);
+
+        $uploads = [];
+
+        if ($this->revisionInvoice) {
+            $uploads[] = ['type' => RequestFileType::Invoice->value, 'file' => $this->revisionInvoice];
+        }
+
+        if ($this->revisionProof) {
+            $uploads[] = ['type' => RequestFileType::ProofTransfer->value, 'file' => $this->revisionProof];
+        }
+
+        $request = app(PettyCashService::class)->resubmit($this->item, auth()->user(), $this->editDescription, $uploads);
 
         session()->flash('status', 'Pengajuan '.$request->request_number.' diajukan ulang.');
+
+        $this->reset('revisionInvoice', 'revisionProof');
 
         unset($this->item);
     }
@@ -117,7 +144,7 @@ new #[Layout('layouts.app')] class extends Component
     {
         return $action === 'approve'
             ? [
-                'budgetCode' => ['required', 'string', 'max:50'],
+                'budgetCode' => ['required', 'string', 'max:50', Rule::exists('budget_codes', 'code')->where('is_active', true)],
                 'budgetDescription' => ['required', 'string', 'max:255'],
             ]
             : ['reason' => ['required', 'string', 'max:2000']];
@@ -240,7 +267,7 @@ new #[Layout('layouts.app')] class extends Component
                 <div class="p-6">
                     <h3 class="font-semibold text-gray-900">Linimasa Status</h3>
                     <ol class="mt-4 space-y-4">
-                        @foreach ($this->item->events->sortBy('created_at') as $event)
+                        @foreach ($this->item->events->sortBy([['created_at', 'asc'], ['id', 'asc']]) as $event)
                             <li class="flex gap-3">
                                 <div class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-500"></div>
                                 <div class="text-sm">
@@ -268,6 +295,21 @@ new #[Layout('layouts.app')] class extends Component
                         <p class="mt-1 text-sm text-gray-500">Perbaiki keperluan sesuai permintaan revisi lalu kirim ulang.</p>
                         <textarea wire:model="editDescription" rows="3" class="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                         <x-input-error :messages="$errors->get('editDescription')" class="mt-2" />
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <x-input-label value="Invoice / Struk pengganti (opsional)" />
+                                <input wire:model="revisionInvoice" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                       class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100" />
+                                <x-input-error :messages="$errors->get('revisionInvoice')" class="mt-2" />
+                            </div>
+                            <div>
+                                <x-input-label value="Bukti transfer tambahan (opsional)" />
+                                <input wire:model="revisionProof" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                       class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100" />
+                                <x-input-error :messages="$errors->get('revisionProof')" class="mt-2" />
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Berkas lama tetap tersimpan sebagai riwayat; berkas baru ditambahkan.</p>
                         <div class="mt-4">
                             <x-primary-button>Ajukan Ulang</x-primary-button>
                         </div>

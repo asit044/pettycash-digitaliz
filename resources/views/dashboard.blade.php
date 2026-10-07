@@ -61,6 +61,12 @@
 
                 @if (auth()->user()->isHead())
                     <x-dashboard-card
+                        title="Monitoring"
+                        description="Pantau ringkasan, status, anggaran, dan pengajuan terbaru."
+                        :href="route('head.index')"
+                        cta="Buka monitoring"
+                    />
+                    <x-dashboard-card
                         title="Laporan & Ringkasan"
                         description="Lihat ringkasan pengajuan dan unduh laporan formal."
                         :href="route('reports.index')"

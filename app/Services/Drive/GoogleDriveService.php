@@ -11,35 +11,58 @@ use Illuminate\Support\Facades\Log;
 
 class GoogleDriveService implements Drive
 {
-    private Client $client;
+    private ?Client $client = null;
 
-    private GoogleDrive $drive;
+    private ?GoogleDrive $drive = null;
 
-    private ?string $rootFolderId;
+    private ?string $rootFolderId = null;
+
+    private bool $booted = false;
 
     public function __construct()
     {
-        $this->client = new Client;
-        $credentials = config('services.google.service_account_json');
-
-        if (is_file($credentials)) {
-            $this->client->setAuthConfig($credentials);
-            $this->client->setScopes([GoogleDrive::DRIVE_FILE]);
-            $this->drive = new GoogleDrive($this->client);
-        }
-
-        $this->rootFolderId = Setting::get('drive_root_folder_id')
-            ?? config('services.google.drive_root_folder_id');
+        // Intentionally light: no file, config, or database access here so
+        // application boot / artisan / migrations never depend on Drive.
+        // All initialization is lazy on first actual Drive use.
     }
 
     public function isConfigured(): bool
     {
-        return isset($this->drive);
+        $credentials = config('services.google.service_account_json');
+
+        return is_string($credentials) && $credentials !== '' && is_file($credentials);
+    }
+
+    /**
+     * Initialize API client on first use. Returns false when unconfigured
+     * instead of throwing, so callers can fall back to local storage.
+     */
+    private function boot(): bool
+    {
+        if ($this->booted) {
+            return isset($this->drive);
+        }
+
+        $this->booted = true;
+
+        if (! $this->isConfigured()) {
+            return false;
+        }
+
+        $this->client = new Client;
+        $this->client->setAuthConfig(config('services.google.service_account_json'));
+        $this->client->setScopes([GoogleDrive::DRIVE_FILE]);
+        $this->drive = new GoogleDrive($this->client);
+
+        $this->rootFolderId = Setting::get('drive_root_folder_id')
+            ?? config('services.google.drive_root_folder_id');
+
+        return true;
     }
 
     public function ensureRequestFolder(string $requestNumber, string $requesterName): array
     {
-        if (! $this->isConfigured()) {
+        if (! $this->boot()) {
             throw new \RuntimeException('Google Drive is not configured.');
         }
 
@@ -60,7 +83,7 @@ class GoogleDriveService implements Drive
 
     public function uploadFile(string $folderId, UploadedFile $file, string $fileName): array
     {
-        if (! $this->isConfigured()) {
+        if (! $this->boot()) {
             throw new \RuntimeException('Google Drive is not configured.');
         }
 

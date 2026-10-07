@@ -8,12 +8,17 @@ use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {
     public function csv(Request $request): StreamedResponse
     {
+        abort_unless($request->user()->can('export-reports'), 403);
+
+        $this->validateFilters($request);
+
         $rows = $this->query($request)->get();
 
         $headers = [
@@ -52,6 +57,10 @@ class ExportController extends Controller
 
     public function pdf(Request $request): Response
     {
+        abort_unless($request->user()->can('export-reports'), 403);
+
+        $this->validateFilters($request);
+
         $rows = $this->query($request)->get();
 
         $total = (float) $rows->sum('nominal');
@@ -67,6 +76,21 @@ class ExportController extends Controller
         ]);
 
         return $pdf->download('rekap-petty-cash-'.now()->format('Ymd-His').'.pdf');
+    }
+
+    /**
+     * Shared filter validation for CSV and PDF so both exports reject
+     * malformed input identically instead of producing misleading output.
+     * Date range is inclusive on both ends (00:00:00–23:59:59).
+     */
+    private function validateFilters(Request $request): void
+    {
+        $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'status' => ['nullable', Rule::in(array_column(RequestStatus::cases(), 'value'))],
+            'budget_code' => ['nullable', 'string', 'max:50'],
+        ]);
     }
 
     private function query(Request $request)

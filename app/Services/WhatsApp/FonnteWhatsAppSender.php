@@ -19,13 +19,22 @@ class FonnteWhatsAppSender implements WhatsAppSender
             return ['provider_message_id' => null, 'error' => 'Fonnte token is not configured.'];
         }
 
-        $response = Http::asForm()
-            ->withToken(config('services.fonnte.token'))
-            ->timeout(30)
-            ->post(config('services.fonnte.url', 'https://api.fonnte.com/send'), [
-                'target' => $phone,
-                'message' => $message,
+        try {
+            $response = Http::asForm()
+                ->withToken(config('services.fonnte.token'))
+                ->timeout(30)
+                ->post(config('services.fonnte.url', 'https://api.fonnte.com/send'), [
+                    'target' => $phone,
+                    'message' => $message,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('Fonnte failed to send WhatsApp message.', [
+                'phone' => $phone,
+                'error' => $e->getMessage(),
             ]);
+
+            return ['provider_message_id' => null, 'error' => $e->getMessage()];
+        }
 
         $body = $response->json();
 

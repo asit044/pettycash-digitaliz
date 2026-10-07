@@ -1,159 +1,229 @@
-<laravel-boost-guidelines>
-=== foundation rules ===
+# Petty Cash Digitaliz - OpenCode Project Rules
 
-# Laravel Boost Guidelines
+## Project
 
-The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
+This is a Laravel application for Digitaliz internal Petty Cash & Reimbursement.
 
-## Foundational Context
+Core workflow:
 
-This application is a Laravel application running on PHP 8.3. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+Requester
+-> Admin
+-> Finance
+-> Completed
 
-Before relying on a package's API, confirm its installed version:
-- PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
-- JS packages: check `package.json` for the installed versions.
+Roles:
 
-## Skills Activation
+* requester
+* admin
+* finance
+* head
 
-This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
+## Critical Dependency Rule
 
-## Conventions
+DO NOT install, remove, update, upgrade, downgrade, or move any dependency without explicit developer approval.
 
-- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
-- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
-- Check for existing components to reuse before writing a new one.
+Never run:
 
-## Verification Scripts
+* composer require
+* composer update
+* composer remove
+* npm install
+* npm uninstall
+* npm update
 
-- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
+unless explicitly instructed by the developer.
 
-## Application Structure & Architecture
+Always inspect these files before making implementation decisions:
 
-- Stick to existing directory structure; don't create new base folders without approval.
-- Do not change the application's dependencies without approval.
+* composer.json
+* composer.lock
+* package.json
+* package-lock.json
+* .env.example
+* existing migrations
+* existing models
+* existing controllers
+* existing authentication
+* existing authorization
+* existing frontend stack
 
-## Frontend Bundling
+Prefer:
 
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+1. Existing dependencies
+2. Laravel native features
+3. PHP native features
+4. Existing frontend libraries
+5. New dependency only after approval
 
-## Documentation Files
+## Do Not Change Stack
 
-- You must only create documentation files if explicitly requested by the user.
+Do not replace:
 
-## Replies
+* Laravel with another backend framework
+* Blade with React/Vue
+* Tailwind with Bootstrap
+* MySQL with another database
+* existing authentication system
+* existing permission system
 
-- Be concise in your explanations - focus on what's important rather than explaining obvious details.
+unless explicitly approved.
 
-=== boost rules ===
+## Database (Canonical — Locked)
 
-# Laravel Boost
+The existing database schema is canonical and is the source of truth.
+The active application workflow already uses these tables:
 
-## Tools
+* users
+* budget_codes
+* requests
+* request_files
+* request_events
+* wa_logs
+* settings
 
-- Laravel Boost is an MCP server with tools designed specifically for this application. Prefer Boost tools over manual alternatives like shell commands or file reads.
-- Use `database-query` to run read-only queries against the database instead of writing raw SQL in tinker.
-- Use `database-schema` to inspect table structure before writing migrations or models.
-- Use `get-absolute-url` to resolve the correct scheme, domain, and port for project URLs. Always use this before sharing a URL with the user.
-- Use `browser-logs` to read browser logs, errors, and exceptions. Only recent logs are useful, ignore old entries.
+Do NOT create duplicate request/file/history/settings tables.
+The following tables are NOT canonical and must NOT be created:
 
-## Searching Documentation (IMPORTANT)
+* petty_cash_requests
+* request_attachments
+* request_budget_details
+* request_status_histories
+* activity_logs
+* notifications
+* app_settings
 
-- Use `search-docs` before changes that depend on Laravel ecosystem APIs, behavior, configuration, or version-specific syntax. Skip it for copy-only edits and other changes where package documentation is irrelevant. Reuse sufficient results already in context instead of searching again.
-- Pass a `packages` array to scope results when you know which packages are relevant.
-- Use multiple broad, topic-based queries: `['rate limiting', 'routing rate limiting', 'routing']`. Expect the most relevant results first.
-- Do not add package names to queries because package info is already shared. Use `test resource table`, not `filament 4 test resource table`.
+Do not create additional tables without a clear technical reason and an approved migration plan.
 
-### Search Syntax
+Notes:
 
-1. Use words for auto-stemmed AND logic: `rate limit` matches both "rate" AND "limit".
-2. Use `"quoted phrases"` for exact position matching: `"infinite scroll"` requires adjacent words in order.
-3. Combine words and phrases for mixed queries: `middleware "rate limit"`.
-4. Use multiple queries for OR logic: `queries=["authentication", "middleware"]`.
+* `request_events` is the canonical status history.
+* `wa_logs` is the canonical WhatsApp/notification log (there is no `notifications` table).
+* Budget assignment uses `requests.budget_code` / `requests.budget_description` (there is no `request_budget_details` table).
 
-## Project Rules
+## Request Status (Locked)
 
-- This project contains committed, area-grouped rules in `.ai/rules` when that directory exists (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
-- Record a rule with `record-rule` only when the user explicitly asks for one. Instructions for the work at hand are not rules, no matter how emphatic: "remove this typo", "use X here" are work to do, not rules to record. Never record a rule on your own initiative, as a byproduct of a change, or to summarize what you just did. When the user does ask, pass a `glob` (e.g. `app/Http/Controllers/**`), a short `title`, and a few-line `note`. Use `record-rule` rather than your native memory or notes tool, because native memory is personal and session-scoped, while only `.ai/rules` is shared with the team and persists in the repo.
+Preserve the existing RequestStatus values:
 
-## Artisan
+* pending_review
+* needs_revision
+* rejected
+* processing
+* done
 
-- Run Artisan commands directly via the command line (e.g., `php artisan route:list`). Use `php artisan list` to discover available commands and `php artisan [command] --help` to check parameters.
-- Inspect routes with `php artisan route:list`. Filter with: `--method=GET`, `--name=users`, `--path=api`, `--except-vendor`, `--only-vendor`.
-- Read configuration values using dot notation: `php artisan config:show app.name`, `php artisan config:show database.default`. Or read config files directly from the `config/` directory.
+Do NOT introduce:
 
-## Tinker
+* draft
+* menunggu_validasi
+* perlu_revisi
+* ditolak
+* diproses_finance
+* selesai
 
-- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
-- Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
-  - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
+Indonesian text (Menunggu Validasi Admin, Perlu Revisi, Ditolak, Diproses Finance, Selesai) must remain presentation labels only, as defined in `App\Enums\RequestStatus::label()`.
 
-=== php rules ===
+Do not create additional workflow statuses without approval.
 
-# PHP
+## Business Rules
 
-- Always use curly braces for control structures, even for single-line bodies.
-- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
-- Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
-- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
-- Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
-- Use array shape type definitions in PHPDoc blocks.
+1. Requester can only see their own requests.
+2. Requester cannot see or edit budget information.
+3. Admin assigns budget code and description.
+4. Admin cannot approve without budget assignment.
+5. Revision requires a reason.
+6. Rejection requires a reason.
+7. Finance cannot change budget information.
+8. Finance cannot complete a request without official transfer proof.
+9. Every status change must create a status history record (`request_events`).
+10. Important actions must create an activity log (`request_events` + `wa_logs`).
+11. Request number must be unique.
+12. Completed requests must not be completed twice.
 
-=== deployments rules ===
+## Architecture
 
-# Deployment
+Do not put complex business logic directly inside controllers.
 
-- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
-- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
+Prefer:
 
-=== laravel/core rules ===
+Controller
+-> Form Request
+-> Service
+-> Model
 
-# Do Things the Laravel Way
+Authorization is implemented with Laravel Gates in `App\Providers\AppServiceProvider`.
+Do NOT replace Gate authorization with Policies, Spatie Permission, or any other permission system without an approved migration plan.
 
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using `php artisan list` and check their parameters with `php artisan [command] --help`.
-- If you're creating a generic PHP class, use `php artisan make:class`.
-- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
+## External Integrations
 
-### Model Creation
+Google Drive and WhatsApp must be isolated behind service abstractions.
 
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
+Do not install external SDKs without approval.
 
-## APIs & Eloquent Resources
+If an integration requires a missing dependency, STOP and report:
 
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
+DEPENDENCY REQUIRED
 
-## URL Generation
+Do not install it automatically.
 
-- When generating links to other pages, prefer named routes and the `route()` function.
+## Reporting
 
-## Testing
+Support:
 
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+* CSV export
+* PDF report
 
-## Vite Error
+Do not add a PDF package unless it already exists or the developer explicitly approves it.
 
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+## Development Process
 
-=== pint/core rules ===
+Work incrementally.
 
-# Laravel Pint Code Formatter
+Do not implement the entire project in one step.
 
-- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
+Recommended order:
 
-=== phpunit/core rules ===
+1. Authentication and roles
+2. Database
+3. Requester workflow
+4. Admin workflow
+5. Finance workflow
+6. Status tracking
+7. Audit log
+8. File handling
+9. Notifications
+10. Google Drive
+11. Reporting
+12. Head dashboard
 
-# PHPUnit
+## Verification
 
-- This project uses PHPUnit. Create tests with `php artisan make:test --phpunit {name}`.
-- Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
-- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
+After meaningful changes:
 
-## Running Tests
+* run relevant tests
+* verify migrations
+* verify authorization
+* verify validation
+* verify workflow transitions
 
-- Run the narrowest set of tests that covers the change. Pass a file path or `--filter=testName` to `php artisan test --compact`.
-- Rerun a test after each change to it.
-- Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
+Do not claim a feature is complete unless it has been tested.
 
-</laravel-boost-guidelines>
+## Important
+
+Build inside the existing project.
+
+Extend existing architecture.
+
+Do not replace existing architecture without approval.
+
+Do not redesign the application.
+
+Do not invent requirements.
+
+Do not add dependencies automatically.
+
+Architecture lock (final):
+
+* Existing database schema is canonical.
+* Do not create duplicate request/file/history/settings tables.
+* Preserve existing RequestStatus values.
+* Do not add dependency without explicit approval.
+* Do not replace Gate authorization without an approved migration plan.

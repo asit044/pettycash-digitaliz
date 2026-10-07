@@ -33,6 +33,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function saveGeneral(): void
     {
+        abort_unless(auth()->user()->can('manage-settings'), 403);
+
         $this->validate([
             'signerName' => ['required', 'string', 'max:255'],
             'signerTitle' => ['required', 'string', 'max:255'],
@@ -48,6 +50,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function addBudgetCode(): void
     {
+        abort_unless(auth()->user()->can('manage-settings'), 403);
+
         $this->validate([
             'newCode' => ['required', 'string', 'max:50', 'unique:budget_codes,code'],
             'newDescription' => ['required', 'string', 'max:255'],
@@ -65,6 +69,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function toggleBudgetCode(int $id): void
     {
+        abort_unless(auth()->user()->can('manage-settings'), 403);
+
         $code = BudgetCode::findOrFail($id);
         $code->update(['is_active' => ! $code->is_active]);
 
@@ -73,6 +79,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function deleteBudgetCode(int $id): void
     {
+        abort_unless(auth()->user()->can('manage-settings'), 403);
+
         $code = BudgetCode::findOrFail($id);
         $code->delete();
 

@@ -7,6 +7,7 @@ use App\Contracts\WhatsAppSender;
 use App\Models\PettyCashRequest;
 use App\Models\RequestFile;
 use App\Services\Drive\GoogleDriveService;
+use App\Services\Drive\NullDriveService;
 use App\Services\WhatsApp\FonnteWhatsAppSender;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -18,7 +19,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(Drive::class, GoogleDriveService::class);
+        // Config-only decision (no database): without a credentials file
+        // there is nothing to lazily boot, so wire the null implementation
+        // directly and keep the core workflow fully local.
+        $this->app->bind(Drive::class, function () {
+            $credentials = config('services.google.service_account_json');
+
+            if (! is_string($credentials) || $credentials === '' || ! is_file($credentials)) {
+                return new NullDriveService;
+            }
+
+            return new GoogleDriveService;
+        });
         $this->app->bind(WhatsAppSender::class, FonnteWhatsAppSender::class);
     }
 
