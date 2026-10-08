@@ -9,6 +9,7 @@ use App\Models\RequestFile;
 use App\Services\Drive\GoogleDriveService;
 use App\Services\Drive\NullDriveService;
 use App\Services\WhatsApp\FonnteWhatsAppSender;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,6 +40,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Carbon::setLocale('id');
+
         Gate::define('view-any-requests', fn ($user) => in_array($user->role, ['admin', 'finance', 'head']));
         Gate::define('create-requests', fn ($user) => $user->role === 'requester');
 

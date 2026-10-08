@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\RequestStatus;
+use App\Enums\Role;
 use App\Livewire\Actions\Logout;
+use App\Models\PettyCashRequest;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -14,173 +17,97 @@ new class extends Component
 
         $this->redirect('/', navigate: true);
     }
+
+    /**
+     * Sidebar menu for the signed-in user's role, with queue counters
+     * so each actor sees at a glance what is waiting for them.
+     *
+     * @return array<int, array{label: string, route: string, active: string, icon: string, badge?: int}>
+     */
+    public function menu(): array
+    {
+        $user = auth()->user();
+
+        $items = [
+            ['label' => 'Dashboard', 'route' => 'dashboard', 'active' => 'dashboard', 'icon' => 'home'],
+        ];
+
+        if ($user->isRequester()) {
+            $items[] = ['label' => 'Ajukan Baru', 'route' => 'requests.create', 'active' => 'requests.create', 'icon' => 'document-plus'];
+            $items[] = [
+                'label' => 'Pengajuan Saya', 'route' => 'requests.index', 'active' => 'requests.index', 'icon' => 'document-text',
+                'badge' => $user->requests()->where('status', RequestStatus::NeedsRevision->value)->count(),
+            ];
+        }
+
+        if ($user->isAdmin()) {
+            $items[] = [
+                'label' => 'Validasi Pengajuan', 'route' => 'admin.index', 'active' => 'admin.index', 'icon' => 'clipboard-check',
+                'badge' => PettyCashRequest::query()->where('status', RequestStatus::PendingReview->value)->count(),
+            ];
+        }
+
+        if ($user->isFinance()) {
+            $items[] = [
+                'label' => 'Pencairan', 'route' => 'finance.index', 'active' => 'finance.index', 'icon' => 'banknotes',
+                'badge' => PettyCashRequest::query()->where('status', RequestStatus::Processing->value)->count(),
+            ];
+        }
+
+        if ($user->isHead()) {
+            $items[] = ['label' => 'Monitoring', 'route' => 'head.index', 'active' => 'head.index', 'icon' => 'presentation-chart'];
+        }
+
+        if ($user->can('view-any-requests')) {
+            $items[] = ['label' => 'Laporan', 'route' => 'reports.index', 'active' => 'reports.index', 'icon' => 'chart-bar'];
+        }
+
+        if ($user->can('manage-settings')) {
+            $items[] = ['label' => 'Pengguna', 'route' => 'settings.users', 'active' => 'settings.users', 'icon' => 'users'];
+            $items[] = ['label' => 'Pengaturan', 'route' => 'settings.index', 'active' => 'settings.index', 'icon' => 'cog'];
+        }
+
+        return $items;
+    }
+
+    public function roleLabel(): string
+    {
+        return Role::tryFrom((string) auth()->user()->role)?->label() ?? '-';
+    }
 }; ?>
 
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" wire:navigate>
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
-                </div>
+@php
+    $menu = $this->menu();
+    $roleLabel = $this->roleLabel();
+@endphp
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
+<div x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+    {{-- Mobile top bar --}}
+    <div class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur lg:hidden">
+        <button type="button" x-on:click="open = true" class="-ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100" aria-label="Buka menu">
+            <x-icon name="bars" class="size-6" />
+        </button>
+        <a href="{{ route('dashboard') }}" wire:navigate>
+            <x-application-logo with-text />
+        </a>
+    </div>
 
-                    @auth
-                        @if (auth()->user()->isRequester())
-                            <x-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')" wire:navigate>
-                                {{ __('Pengajuan Saya') }}
-                            </x-nav-link>
-                        @endif
-
-                        @if (auth()->user()->isAdmin())
-                            <x-nav-link :href="route('admin.index')" :active="request()->routeIs('admin.index')" wire:navigate>
-                                {{ __('Validasi Pengajuan') }}
-                            </x-nav-link>
-                        @endif
-
-                        @if (auth()->user()->isFinance())
-                            <x-nav-link :href="route('finance.index')" :active="request()->routeIs('finance.index')" wire:navigate>
-                                {{ __('Pencairan') }}
-                            </x-nav-link>
-                        @endif
-
-                        @if (auth()->user()->isHead())
-                            <x-nav-link :href="route('head.index')" :active="request()->routeIs('head.index')" wire:navigate>
-                                {{ __('Monitoring') }}
-                            </x-nav-link>
-                        @endif
-
-                @if (auth()->user()->isHead())
-                    <x-responsive-nav-link :href="route('head.index')" :active="request()->routeIs('head.index')" wire:navigate>
-                        {{ __('Monitoring') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if (in_array(auth()->user()->role, ['admin', 'finance', 'head']))
-                            <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.index')" wire:navigate>
-                                {{ __('Laporan') }}
-                            </x-nav-link>
-                        @endif
-
-                        @if (auth()->user()->isAdmin())
-                            <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.index')" wire:navigate>
-                                {{ __('Pengaturan') }}
-                            </x-nav-link>
-                        @endif
-                    @endauth
-                </div>
-            </div>
-
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name" x-on:profile-updated.window="name = $event.detail.name"></div>
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile')" wire:navigate>
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <button wire:click="logout" class="w-full text-start">
-                            <x-dropdown-link>
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </button>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+    {{-- Mobile overlay --}}
+    <div x-show="open" x-cloak class="fixed inset-0 z-40 lg:hidden">
+        <div x-show="open" x-transition.opacity class="absolute inset-0 bg-slate-900/50" x-on:click="open = false"></div>
+        <div x-show="open"
+             x-transition:enter="transition duration-200 ease-out" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition duration-150 ease-in" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
+             class="relative h-full w-72 max-w-[85%]">
+            <button type="button" x-on:click="open = false" class="absolute top-4 -right-12 rounded-lg p-2 text-white" aria-label="Tutup menu">
+                <x-icon name="x-mark" class="size-6" />
+            </button>
+            @include('livewire.layout.partials.sidebar')
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-
-            @auth
-                @if (auth()->user()->isRequester())
-                    <x-responsive-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')" wire:navigate>
-                        {{ __('Pengajuan Saya') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if (auth()->user()->isAdmin())
-                    <x-responsive-nav-link :href="route('admin.index')" :active="request()->routeIs('admin.index')" wire:navigate>
-                        {{ __('Validasi Pengajuan') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if (auth()->user()->isFinance())
-                    <x-responsive-nav-link :href="route('finance.index')" :active="request()->routeIs('finance.index')" wire:navigate>
-                        {{ __('Pencairan') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if (in_array(auth()->user()->role, ['admin', 'finance', 'head']))
-                    <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.index')" wire:navigate>
-                        {{ __('Laporan') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                @if (auth()->user()->isAdmin())
-                    <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.index')" wire:navigate>
-                        {{ __('Pengaturan') }}
-                    </x-responsive-nav-link>
-                @endif
-            @endauth
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800" x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name" x-on:profile-updated.window="name = $event.detail.name"></div>
-                <div class="font-medium text-sm text-gray-500">{{ auth()->user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile')" wire:navigate>
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <button wire:click="logout" class="w-full text-start">
-                    <x-responsive-nav-link>
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </button>
-            </div>
-        </div>
+    {{-- Desktop sidebar --}}
+    <div class="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-72">
+        @include('livewire.layout.partials.sidebar')
     </div>
-</nav>
+</div>

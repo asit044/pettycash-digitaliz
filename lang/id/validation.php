@@ -1,0 +1,67 @@
+<?php
+
+// Pesan validasi Bahasa Indonesia. Aturan yang tidak tercantum di sini
+// otomatis memakai pesan bawaan (fallback) berbahasa Inggris.
+
+return [
+    'accepted' => ':Attribute harus disetujui.',
+    'after_or_equal' => ':Attribute harus berupa tanggal setelah atau sama dengan :date.',
+    'array' => ':Attribute harus berupa daftar.',
+    'before_or_equal' => ':Attribute harus berupa tanggal sebelum atau sama dengan :date.',
+    'boolean' => ':Attribute harus bernilai benar atau salah.',
+    'confirmed' => 'Konfirmasi :attribute tidak cocok.',
+    'current_password' => 'Password salah.',
+    'date' => ':Attribute bukan tanggal yang valid.',
+    'date_format' => ':Attribute tidak sesuai format :format.',
+    'digits' => ':Attribute harus terdiri dari :digits angka.',
+    'email' => ':Attribute harus berupa alamat email yang valid.',
+    'enum' => ':Attribute yang dipilih tidak valid.',
+    'exists' => ':Attribute yang dipilih tidak valid.',
+    'file' => ':Attribute harus berupa berkas.',
+    'image' => ':Attribute harus berupa gambar.',
+    'in' => ':Attribute yang dipilih tidak valid.',
+    'integer' => ':Attribute harus berupa bilangan bulat.',
+    'lowercase' => ':Attribute harus menggunakan huruf kecil.',
+    'max' => [
+        'array' => ':Attribute maksimal berisi :max item.',
+        'file' => 'Ukuran :attribute maksimal :max kilobita.',
+        'numeric' => ':Attribute maksimal :max.',
+        'string' => ':Attribute maksimal :max karakter.',
+    ],
+    'max_digits' => ':Attribute maksimal :max digit.',
+    'mimes' => ':Attribute harus berupa berkas berjenis: :values.',
+    'min' => [
+        'array' => ':Attribute minimal berisi :min item.',
+        'file' => 'Ukuran :attribute minimal :min kilobita.',
+        'numeric' => ':Attribute minimal :min.',
+        'string' => ':Attribute minimal :min karakter.',
+    ],
+    'numeric' => ':Attribute harus berupa angka.',
+    'password' => [
+        'letters' => ':Attribute harus mengandung minimal satu huruf.',
+        'mixed' => ':Attribute harus mengandung huruf besar dan huruf kecil.',
+        'numbers' => ':Attribute harus mengandung minimal satu angka.',
+        'symbols' => ':Attribute harus mengandung minimal satu simbol.',
+        'uncompromised' => ':Attribute ini pernah bocor dalam kebocoran data. Silakan gunakan :attribute lain.',
+    ],
+    'required' => ':Attribute wajib diisi.',
+    'string' => ':Attribute harus berupa teks.',
+    'unique' => ':Attribute sudah digunakan.',
+    'uploaded' => ':Attribute gagal diunggah.',
+
+    'attributes' => [
+        'name' => 'nama',
+        'email' => 'email',
+        'password' => 'password',
+        'current_password' => 'password saat ini',
+        'phone' => 'nomor WhatsApp',
+        'nominal' => 'nominal',
+        'description' => 'keperluan',
+        'invoice' => 'invoice / struk',
+        'proofTransfer' => 'bukti transfer',
+        'from' => 'tanggal awal',
+        'to' => 'tanggal akhir',
+        'form.email' => 'email',
+        'form.password' => 'password',
+    ],
+];

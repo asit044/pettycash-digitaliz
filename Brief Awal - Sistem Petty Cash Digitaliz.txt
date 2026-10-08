@@ -231,3 +231,9 @@ l​ampiran, melihat status & riwayat​
 ​●​ ​Bagian mana yang dikerjakan lebih dulu bila waktu tidak cukup untuk semuanya.​
 
 
+Role	Email	Password
+admin	admin@digitaliz.id	password
+finance	finance@digitaliz.id	password
+head	hengki@digitaliz.id	password
+Email: dquigley@example.com
+Password: password

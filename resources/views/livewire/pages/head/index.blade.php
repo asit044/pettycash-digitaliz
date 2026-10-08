@@ -2,11 +2,13 @@
 
 use App\Enums\RequestStatus;
 use App\Models\PettyCashRequest;
+use App\Support\Money;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.app')] class extends Component
+new #[Layout('layouts.app')] #[Title('Monitoring')] class extends Component
 {
     public string $from = '';
 
@@ -29,10 +31,23 @@ new #[Layout('layouts.app')] class extends Component
         $this->validate([
             'from' => ['required', 'date_format:Y-m-d'],
             'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
-        ]);
+        ], attributes: ['from' => 'tanggal awal', 'to' => 'tanggal akhir']);
 
         $this->appliedFrom = $this->from;
         $this->appliedTo = $this->to;
+    }
+
+    public function preset(string $range): void
+    {
+        [$from, $to] = match ($range) {
+            'last-month' => [now()->subMonthNoOverflow()->startOfMonth(), now()->subMonthNoOverflow()->endOfMonth()],
+            'year' => [now()->startOfYear(), now()],
+            default => [now()->startOfMonth(), now()],
+        };
+
+        $this->from = $this->appliedFrom = $from->format('Y-m-d');
+        $this->to = $this->appliedTo = $to->format('Y-m-d');
+        $this->resetValidation();
     }
 
     private function base()
@@ -101,139 +116,125 @@ new #[Layout('layouts.app')] class extends Component
     }
 }; ?>
 
+@php
+    $breakdown = collect($this->statusBreakdown)->keyBy('value');
+    $done = $breakdown['done'];
+    $inFlight = $breakdown['pending_review']['nominal'] + $breakdown['processing']['nominal'];
+    $maxBudget = (float) ($this->budgetSummary->max('nominal') ?: 1);
+@endphp
+
 <div>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Monitoring Petty Cash</h2>
+        <x-page-header title="Monitoring Petty Cash" description="Ringkasan pengajuan, status, dan penggunaan anggaran untuk Head of Digitaliz.">
+            <a href="{{ route('reports.index', ['from' => $appliedFrom, 'to' => $appliedTo]) }}" wire:navigate class="btn-secondary">
+                <x-icon name="chart-bar" class="size-4" /> Lihat rincian di Laporan
+            </a>
+        </x-page-header>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div>
-                            <x-input-label value="Dari Tanggal" />
-                            <input wire:model.live="from" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                            <x-input-error :messages="$errors->get('from')" class="mt-2" />
-                        </div>
-                        <div>
-                            <x-input-label value="Sampai Tanggal" />
-                            <input wire:model.live="to" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                            <x-input-error :messages="$errors->get('to')" class="mt-2" />
-                        </div>
-                    </div>
-                    <p class="mt-2 text-xs text-gray-500">Periode {{ $this->appliedFrom }} s/d {{ $this->appliedTo }} (inklusif).</p>
+    <div class="space-y-6">
+        <div class="card flex flex-col gap-4 p-5 lg:flex-row lg:items-end lg:justify-between">
+            <div class="grid flex-1 gap-4 sm:grid-cols-2 lg:max-w-lg">
+                <div>
+                    <x-input-label for="from" value="Dari tanggal" />
+                    <input wire:model.live="from" id="from" type="date" class="field mt-1.5" />
+                    <x-input-error :messages="$errors->get('from')" class="mt-1.5" />
                 </div>
+                <div>
+                    <x-input-label for="to" value="Sampai tanggal" />
+                    <input wire:model.live="to" id="to" type="date" class="field mt-1.5" />
+                    <x-input-error :messages="$errors->get('to')" class="mt-1.5" />
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" wire:click="preset('month')" class="btn-secondary px-3 py-2 text-xs">Bulan ini</button>
+                <button type="button" wire:click="preset('last-month')" class="btn-secondary px-3 py-2 text-xs">Bulan lalu</button>
+                <button type="button" wire:click="preset('year')" class="btn-secondary px-3 py-2 text-xs">Tahun ini</button>
+            </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <x-stat-card label="Total Pengajuan" :value="$this->totalCount" icon="document-text" />
+            <x-stat-card label="Total Nominal" :value="Money::compact($this->totalNominal)" icon="wallet" tone="brand" :hint="Money::rupiah($this->totalNominal)" />
+            <x-stat-card label="Sudah Dicairkan" :value="Money::compact($done['nominal'])" icon="check-circle" tone="emerald" :hint="$done['count'].' pengajuan'" />
+            <x-stat-card label="Sedang Berjalan" :value="Money::compact($inFlight)" icon="clock" tone="amber"
+                         :hint="($breakdown['pending_review']['count'] + $breakdown['processing']['count']).' pengajuan'" />
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="card p-5 sm:p-6">
+                <h2 class="font-semibold text-slate-900">Ringkasan per Status</h2>
+                <p class="text-xs text-slate-500">Periode {{ \Illuminate\Support\Carbon::parse($appliedFrom)->translatedFormat('d M Y') }} – {{ \Illuminate\Support\Carbon::parse($appliedTo)->translatedFormat('d M Y') }}</p>
+
+                <ul class="mt-5 space-y-4">
+                    @foreach (RequestStatus::cases() as $status)
+                        @php
+                            $row = $breakdown[$status->value];
+                            $pct = $this->totalCount > 0 ? round($row['count'] / $this->totalCount * 100) : 0;
+                        @endphp
+                        <li>
+                            <div class="flex items-center justify-between gap-3 text-sm">
+                                <span class="flex items-center gap-2 font-medium text-slate-700">
+                                    <span class="size-2.5 rounded-full {{ $status->dotClasses() }}"></span>
+                                    {{ $row['label'] }}
+                                </span>
+                                <span class="text-right">
+                                    <span class="font-semibold text-slate-900">{{ $row['count'] }}</span>
+                                    <span class="text-slate-400">·</span>
+                                    <span class="text-slate-500">{{ Money::rupiah($row['nominal']) }}</span>
+                                </span>
+                            </div>
+                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div class="h-full rounded-full {{ $status->dotClasses() }} transition-all" style="width: {{ $pct }}%"></div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
 
-            <div class="grid gap-6 sm:grid-cols-2">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <p class="text-sm text-gray-500">Total Pengajuan</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">{{ $this->totalCount }}</p>
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <p class="text-sm text-gray-500">Total Nominal</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">Rp {{ number_format($this->totalNominal, 0, ',', '.') }}</p>
-                </div>
-            </div>
+            <div class="card p-5 sm:p-6">
+                <h2 class="font-semibold text-slate-900">Ringkasan per Kode Anggaran</h2>
+                <p class="text-xs text-slate-500">10 kode dengan nominal terbesar</p>
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="font-semibold text-gray-900">Ringkasan per Status</h3>
-                    <div class="mt-4 overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                                <tr>
-                                    <th class="px-4 py-3">Status</th>
-                                    <th class="px-4 py-3 text-right">Jumlah</th>
-                                    <th class="px-4 py-3 text-right">Nominal</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @foreach ($this->statusBreakdown as $row)
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-gray-900">{{ $row['label'] }}</td>
-                                        <td class="px-4 py-3 text-right text-gray-900">{{ $row['count'] }}</td>
-                                        <td class="px-4 py-3 text-right text-gray-900">Rp {{ number_format($row['nominal'], 0, ',', '.') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                @if ($this->budgetSummary->isEmpty())
+                    <x-empty-state icon="tag" title="Belum ada kode anggaran" description="Belum ada pengajuan yang disetujui pada periode ini." class="py-10" />
+                @else
+                    <ul class="mt-5 space-y-4">
+                        @foreach ($this->budgetSummary as $budget)
+                            <li>
+                                <div class="flex items-center justify-between gap-3 text-sm">
+                                    <span class="min-w-0 truncate">
+                                        <span class="font-mono font-semibold text-slate-900">{{ $budget->budget_code }}</span>
+                                        <span class="text-slate-500">{{ $budget->budget_description }}</span>
+                                    </span>
+                                    <span class="shrink-0 font-semibold text-slate-900">{{ Money::rupiah($budget->nominal) }}</span>
+                                </div>
+                                <div class="mt-2 flex items-center gap-3">
+                                    <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                        <div class="h-full rounded-full bg-brand-500" style="width: {{ round($budget->nominal / $maxBudget * 100) }}%"></div>
+                                    </div>
+                                    <span class="w-20 shrink-0 text-right text-xs text-slate-500">{{ $budget->total }} pengajuan</span>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
+        </div>
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="font-semibold text-gray-900">Ringkasan per Kode Anggaran</h3>
-                    @if ($this->budgetSummary->isEmpty())
-                        <p class="mt-4 text-sm text-gray-500">Belum ada kode anggaran pada periode ini.</p>
-                    @else
-                        <div class="mt-4 overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                                    <tr>
-                                        <th class="px-4 py-3">Kode</th>
-                                        <th class="px-4 py-3">Uraian</th>
-                                        <th class="px-4 py-3 text-right">Jumlah</th>
-                                        <th class="px-4 py-3 text-right">Nominal</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    @foreach ($this->budgetSummary as $budget)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $budget->budget_code }}</td>
-                                            <td class="px-4 py-3 text-gray-600">{{ $budget->budget_description }}</td>
-                                            <td class="px-4 py-3 text-right text-gray-900">{{ $budget->total }}</td>
-                                            <td class="px-4 py-3 text-right text-gray-900">Rp {{ number_format($budget->nominal, 0, ',', '.') }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-                </div>
+        <div class="card overflow-hidden">
+            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+                <h2 class="font-semibold text-slate-900">Pengajuan Terbaru</h2>
             </div>
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="font-semibold text-gray-900">Pengajuan Terbaru</h3>
-                    @if ($this->recentRequests->isEmpty())
-                        <p class="mt-4 text-sm text-gray-500">Tidak ada data pada periode ini.</p>
-                    @else
-                        <div class="mt-4 overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                                    <tr>
-                                        <th class="px-4 py-3">Nomor</th>
-                                        <th class="px-4 py-3">Pengaju</th>
-                                        <th class="px-4 py-3 text-right">Nominal</th>
-                                        <th class="px-4 py-3">Status</th>
-                                        <th class="px-4 py-3">Tanggal</th>
-                                        <th class="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    @foreach ($this->recentRequests as $item)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $item->request_number }}</td>
-                                            <td class="px-4 py-3 text-gray-900">{{ $item->requester->name }}</td>
-                                            <td class="px-4 py-3 text-right text-gray-900">Rp {{ number_format($item->nominal, 0, ',', '.') }}</td>
-                                            <td class="px-4 py-3"><x-status-badge :status="$item->status" /></td>
-                                            <td class="px-4 py-3 text-gray-600">{{ $item->submitted_at?->format('d M Y') }}</td>
-                                            <td class="px-4 py-3 text-right">
-                                                <a href="{{ route('requests.show', ['id' => $item->id]) }}" wire:navigate class="text-indigo-600 hover:text-indigo-500 font-medium">
-                                                    Detail →
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
+            @if ($this->recentRequests->isEmpty())
+                <x-empty-state title="Tidak ada data pada periode ini" />
+            @else
+                <div class="divide-y divide-slate-100">
+                    @foreach ($this->recentRequests as $item)
+                        <x-request-item :item="$item" show-requester wire:key="h-{{ $item->id }}" />
+                    @endforeach
                 </div>
-            </div>
+            @endif
         </div>
     </div>
 </div>

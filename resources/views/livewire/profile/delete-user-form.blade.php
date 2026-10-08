@@ -23,56 +23,33 @@ new class extends Component
     }
 }; ?>
 
-<section class="space-y-6">
+<section class="space-y-5">
     <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Delete Account') }}
-        </h2>
-
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.') }}
+        <h2 class="text-lg font-semibold text-rose-700">Hapus Akun</h2>
+        <p class="mt-1 text-sm text-slate-500">
+            Setelah dihapus, akun dan seluruh datanya hilang permanen. Pastikan tidak ada pengajuan yang masih berjalan.
         </p>
     </header>
 
     <x-danger-button
         x-data=""
         x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-    >{{ __('Delete Account') }}</x-danger-button>
+    >Hapus Akun</x-danger-button>
 
     <x-modal name="confirm-user-deletion" :show="$errors->isNotEmpty()" focusable>
         <form wire:submit="deleteUser" class="p-6">
-
-            <h2 class="text-lg font-medium text-gray-900">
-                {{ __('Are you sure you want to delete your account?') }}
-            </h2>
-
-            <p class="mt-1 text-sm text-gray-600">
-                {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
-            </p>
+            <h2 class="text-lg font-semibold text-slate-900">Yakin ingin menghapus akun?</h2>
+            <p class="mt-1 text-sm text-slate-500">Masukkan password Anda untuk mengonfirmasi. Tindakan ini tidak dapat dibatalkan.</p>
 
             <div class="mt-6">
-                <x-input-label for="password" value="{{ __('Password') }}" class="sr-only" />
-
-                <x-text-input
-                    wire:model="password"
-                    id="password"
-                    name="password"
-                    type="password"
-                    class="mt-1 block w-3/4"
-                    placeholder="{{ __('Password') }}"
-                />
-
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                <x-input-label for="password" value="Password" class="sr-only" />
+                <x-text-input wire:model="password" id="password" name="password" type="password" class="sm:w-3/4" placeholder="Password" />
+                <x-input-error :messages="$errors->get('password')" class="mt-1.5" />
             </div>
 
-            <div class="mt-6 flex justify-end">
-                <x-secondary-button x-on:click="$dispatch('close')">
-                    {{ __('Cancel') }}
-                </x-secondary-button>
-
-                <x-danger-button class="ms-3">
-                    {{ __('Delete Account') }}
-                </x-danger-button>
+            <div class="mt-6 flex justify-end gap-3">
+                <x-secondary-button x-on:click="$dispatch('close')">Batal</x-secondary-button>
+                <x-danger-button>Hapus Akun</x-danger-button>
             </div>
         </form>
     </x-modal>

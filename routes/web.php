@@ -7,7 +7,7 @@ use Livewire\Volt\Volt;
 
 Route::view('/', 'welcome');
 
-Route::view('dashboard', 'dashboard')
+Volt::route('dashboard', 'pages.dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -33,6 +33,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings', 'pages.settings.index')
         ->middleware('can:manage-settings')
         ->name('settings.index');
+    Volt::route('settings/users', 'pages.settings.users')
+        ->middleware('can:manage-settings')
+        ->name('settings.users');
 
     Route::get('requests/{id}/download/{file}', RequestFileController::class)
         ->name('requests.files.download');

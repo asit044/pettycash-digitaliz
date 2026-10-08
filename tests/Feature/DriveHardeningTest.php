@@ -113,8 +113,8 @@ class DriveHardeningTest extends TestCase
         $files = $request->files()->orderBy('id')->get();
         $this->assertCount(2, $files);
         $this->assertSame('folder-'.$request->request_number, $fake->uploads[0][0]);
-        $this->assertSame('invoice-inv.pdf', $fake->uploads[0][1]);
-        $this->assertSame('proof_transfer-tf.jpg', $fake->uploads[1][1]);
+        $this->assertSame($request->request_number.'_invoice_inv.pdf', $fake->uploads[0][1]);
+        $this->assertSame($request->request_number.'_proof_transfer_tf.jpg', $fake->uploads[1][1]);
 
         foreach ($files as $file) {
             $this->assertNotNull($file->drive_file_id);
@@ -138,7 +138,7 @@ class DriveHardeningTest extends TestCase
 
         $proof = $request->files()->where('type', RequestFileType::OfficialReceipt->value)->firstOrFail();
 
-        $this->assertSame('file-official_receipt-resmi.pdf', $proof->drive_file_id);
+        $this->assertSame('file-'.$request->request_number.'_official_receipt_resmi.pdf', $proof->drive_file_id);
         $this->assertNotNull($proof->drive_url);
         $this->assertSame(RequestStatus::Done->value, $request->fresh()->status);
     }

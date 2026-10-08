@@ -1,25 +1,14 @@
-@props(['status'])
+@props(['status', 'short' => false])
 
 @php
-    $color = match ($status) {
-        'pending_review' => 'bg-yellow-100 text-yellow-800',
-        'needs_revision' => 'bg-orange-100 text-orange-800',
-        'rejected' => 'bg-red-100 text-red-800',
-        'processing' => 'bg-blue-100 text-blue-800',
-        'done' => 'bg-green-100 text-green-800',
-        default => 'bg-gray-100 text-gray-800',
-    };
-
-    $label = match ($status) {
-        'pending_review' => 'Menunggu Validasi Admin',
-        'needs_revision' => 'Perlu Revisi',
-        'rejected' => 'Ditolak',
-        'processing' => 'Diproses Finance',
-        'done' => 'Selesai',
-        default => $status,
-    };
+    $enum = $status instanceof \App\Enums\RequestStatus ? $status : \App\Enums\RequestStatus::tryFrom((string) $status);
 @endphp
 
-<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ $color }}">
-    {{ $label }}
-</span>
+@if ($enum)
+    <span {{ $attributes->merge(['class' => 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ring-1 ring-inset '.$enum->badgeClasses()]) }}>
+        <span class="size-1.5 rounded-full {{ $enum->dotClasses() }}"></span>
+        {{ $short ? $enum->shortLabel() : $enum->label() }}
+    </span>
+@else
+    <span {{ $attributes->merge(['class' => 'inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700']) }}>{{ $status }}</span>
+@endif

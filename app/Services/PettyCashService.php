@@ -112,16 +112,24 @@ class PettyCashService
     ): PettyCashRequest {
         Gate::forUser($admin)->authorize('review-requests');
 
-        if ($request->status() !== RequestStatus::PendingReview) {
-            throw ValidationException::withMessages(['status' => 'Hanya pengajuan berstatus "Menunggu Validasi" yang dapat direview.']);
-        }
+        DB::transaction(function () use ($admin, $request, $action, $budgetCode, $budgetDescription, $reason): void {
+            // Lock the row so two admins acting at once cannot both review it.
+            $request->setRawAttributes(
+                PettyCashRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail()->getAttributes(),
+                sync: true,
+            );
 
-        match (true) {
-            $action === 'approve' => $this->approve($admin, $request, $budgetCode, $budgetDescription),
-            $action === 'reject' => $this->reject($admin, $request, $reason),
-            $action === 'revise' => $this->revise($admin, $request, $reason),
-            default => throw ValidationException::withMessages(['action' => 'Aksi tidak dikenal.']),
-        };
+            if ($request->status() !== RequestStatus::PendingReview) {
+                throw ValidationException::withMessages(['status' => 'Pengajuan ini sudah diproses. Hanya pengajuan berstatus "Menunggu Validasi" yang dapat direview.']);
+            }
+
+            match (true) {
+                $action === 'approve' => $this->approve($admin, $request, $budgetCode, $budgetDescription),
+                $action === 'reject' => $this->reject($admin, $request, $reason),
+                $action === 'revise' => $this->revise($admin, $request, $reason),
+                default => throw ValidationException::withMessages(['action' => 'Aksi tidak dikenal.']),
+            };
+        });
 
         return $request->refresh();
     }
@@ -130,11 +138,16 @@ class PettyCashService
     {
         Gate::forUser($finance)->authorize('process-requests');
 
-        if ($request->status() !== RequestStatus::Processing) {
-            throw ValidationException::withMessages(['status' => 'Hanya pengajuan berstatus "Diproses Finance" yang dapat diselesaikan.']);
-        }
-
         return DB::transaction(function () use ($finance, $request, $officialReceipt): PettyCashRequest {
+            $request->setRawAttributes(
+                PettyCashRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail()->getAttributes(),
+                sync: true,
+            );
+
+            if ($request->status() !== RequestStatus::Processing) {
+                throw ValidationException::withMessages(['status' => 'Hanya pengajuan berstatus "Diproses Finance" yang dapat diselesaikan.']);
+            }
+
             $this->attachFiles($request, $finance, [
                 ['type' => RequestFileType::OfficialReceipt->value, 'file' => $officialReceipt],
             ]);
@@ -246,9 +259,11 @@ class PettyCashService
         // Drive is best-effort mirroring: any API/credential failure falls
         // back to local storage so the core workflow is never corrupted.
         // Drive metadata stays null unless an upload verifiably succeeded.
-        if ($this->drive->isConfigured()) {
+        // Reuse the folder created at submission so revisions and the official
+        // receipt land next to the original files, even in a later month.
+        if ($this->drive->isConfigured() && blank($request->drive_folder_id)) {
             try {
-                $folder = $this->drive->ensureRequestFolder($request->request_number, $uploader->name);
+                $folder = $this->drive->ensureRequestFolder($request->request_number, $request->requester?->name ?? $uploader->name);
                 $request->update([
                     'drive_folder_id' => $folder['id'],
                     'drive_folder_url' => $folder['url'],
@@ -277,7 +292,7 @@ class PettyCashService
                     $driverMeta = $this->drive->uploadFile(
                         $request->drive_folder_id,
                         $file,
-                        sprintf('%s-%s', $type, $originalName),
+                        self::driveFileName($request->request_number, $type, $originalName),
                     );
                 } catch (\Throwable $e) {
                     Log::warning('Google Drive file upload failed; file kept in local storage.', [
@@ -300,6 +315,19 @@ class PettyCashService
                 'uploaded_by' => $uploader->id,
             ]);
         }
+    }
+
+    /**
+     * Drive naming convention: every file carries its request number so it
+     * stays traceable even when moved out of its folder, e.g.
+     * "KC-2026-0007_invoice_struk-bensin.pdf".
+     */
+    public static function driveFileName(string $requestNumber, string $type, string $originalName): string
+    {
+        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+        $base = str(pathinfo($originalName, PATHINFO_FILENAME))->slug()->limit(60, '')->value() ?: 'berkas';
+
+        return sprintf('%s_%s_%s', $requestNumber, $type, $base).($extension !== '' ? '.'.strtolower($extension) : '');
     }
 
     private function recordEvent(

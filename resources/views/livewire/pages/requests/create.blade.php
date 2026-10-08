@@ -3,24 +3,25 @@
 use App\Enums\RequestFileType;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
-new #[Layout('layouts.app')] class extends Component
+new #[Layout('layouts.app')] #[Title('Ajukan Pengajuan')] class extends Component
 {
     use WithFileUploads;
 
-    #[Validate('required|numeric|min:1|max_digits:15')]
+    #[Validate('required|numeric|min:1|max_digits:15', as: 'nominal')]
     public string $nominal = '';
 
-    #[Validate('required|string|max:2000')]
+    #[Validate('required|string|max:2000', as: 'keperluan')]
     public string $description = '';
 
-    #[Validate('nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp')]
+    #[Validate('nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp', as: 'invoice / struk')]
     public $invoice;
 
-    #[Validate('nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp')]
+    #[Validate('nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp', as: 'bukti transfer')]
     public $proofTransfer;
 
     public function submit(): void
@@ -42,7 +43,7 @@ new #[Layout('layouts.app')] class extends Component
         $request = app(\App\Services\PettyCashService::class)
             ->submit(auth()->user(), $this->description, $this->nominal, $uploads);
 
-        session()->flash('status', 'Pengajuan '.$request->request_number.' berhasil dikirim.');
+        session()->flash('status', 'Pengajuan '.$request->request_number.' berhasil dikirim. Admin sudah menerima notifikasi.');
 
         $this->redirect(route('requests.show', $request), navigate: true);
     }
@@ -56,60 +57,101 @@ new #[Layout('layouts.app')] class extends Component
 
 <div>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Ajukan Pengajuan</h2>
+        <x-page-header title="Ajukan Pengajuan" description="Isi data reimbursement atau kas kecil, lalu kirim untuk divalidasi Admin."
+                       :back="route('requests.index')" />
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <form wire:submit="submit" class="p-6 space-y-6">
-                    <div>
-                        <x-input-label for="description" value="Keperluan *" />
-                        <textarea wire:model="description" id="description" rows="3"
-                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                  placeholder="Contoh: Pembelian pulsa untuk meeting tim, transport meeting klien, dll."></textarea>
-                        <x-input-error :messages="$errors->get('description')" class="mt-2" />
-                    </div>
+    <div class="grid gap-6 xl:grid-cols-3">
+        <form wire:submit="submit" class="card divide-y divide-slate-100 xl:col-span-2">
+            <div class="space-y-5 p-5 sm:p-6">
+                <div>
+                    <h2 class="font-semibold text-slate-900">Detail pengajuan</h2>
+                    <p class="text-sm text-slate-500">Jelaskan kebutuhan Anda sejelas mungkin.</p>
+                </div>
 
-                    <div>
-                        <x-input-label for="nominal" value="Nominal (Rp) *" />
-                        <x-text-input wire:model="nominal" id="nominal" class="mt-1 block w-full" type="text"
-                                      inputmode="numeric" placeholder="250000" />
-                        <x-input-error :messages="$errors->get('nominal')" class="mt-2" />
+                <div>
+                    <x-input-label for="nominal" value="Nominal" required />
+                    <div class="relative mt-1.5"
+                         x-data="{
+                             raw: $wire.entangle('nominal'),
+                             get display() { return this.raw ? new Intl.NumberFormat('id-ID').format(this.raw) : '' },
+                             set display(v) { this.raw = (v || '').replace(/\D/g, '').replace(/^0+/, '') },
+                         }">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-sm font-semibold text-slate-500">Rp</span>
+                        <input id="nominal" type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+                               x-model="display" class="field py-3 pl-12 text-lg font-semibold tracking-tight" />
                     </div>
+                    <x-input-error :messages="$errors->get('nominal')" class="mt-1.5" />
+                </div>
 
-                    <div class="p-4 rounded-lg bg-sky-50 border border-sky-200 text-sm text-sky-800">
-                        {{ $this->budgetHiddenNotice }}
+                <div x-data="{ count: $wire.description.length }">
+                    <div class="flex items-center justify-between">
+                        <x-input-label for="description" value="Keperluan" required />
+                        <span class="text-xs text-slate-400"><span x-text="count">0</span>/2000</span>
                     </div>
-
-                    <div class="grid gap-6 sm:grid-cols-2">
-                        <div>
-                            <x-input-label for="invoice" value="Invoice / Struk (opsional)" />
-                            <input wire:model="invoice" id="invoice" type="file"
-                                   accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                   class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100" />
-                            <x-input-error :messages="$errors->get('invoice')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="proofTransfer" value="Bukti Transfer Awal (opsional)" />
-                            <input wire:model="proofTransfer" id="proofTransfer" type="file"
-                                   accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                   class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100" />
-                            <x-input-error :messages="$errors->get('proofTransfer')" class="mt-2" />
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-3">
-                        <a href="{{ route('requests.index') }}" wire:navigate class="text-sm text-gray-600 hover:text-gray-900">
-                            Batal
-                        </a>
-                        <x-primary-button wire:loading.attr="disabled">
-                            {{ __('Kirim Pengajuan') }}
-                        </x-primary-button>
-                    </div>
-                </form>
+                    <textarea wire:model="description" id="description" rows="4" maxlength="2000"
+                              x-on:input="count = $event.target.value.length"
+                              class="field mt-1.5"
+                              placeholder="Contoh: Transport meeting dengan klien PT ABC di Jakarta Selatan, 7 Oktober 2026."></textarea>
+                    <x-input-error :messages="$errors->get('description')" class="mt-1.5" />
+                </div>
             </div>
-        </div>
+
+            <div class="space-y-5 p-5 sm:p-6">
+                <div>
+                    <h2 class="font-semibold text-slate-900">Dokumen pendukung</h2>
+                    <p class="text-sm text-slate-500">Opsional, tapi sangat membantu Admin memvalidasi lebih cepat.</p>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <x-file-input model="invoice" label="Invoice / Struk" />
+                    <x-file-input model="proofTransfer" label="Bukti Transfer Awal" />
+                </div>
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 bg-slate-50/60 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <p class="flex items-center gap-2 text-xs text-slate-500">
+                    <x-icon name="lock-closed" class="size-4 text-slate-400" />
+                    {{ $this->budgetHiddenNotice }}
+                </p>
+                <div class="flex gap-3">
+                    <a href="{{ route('requests.index') }}" wire:navigate class="btn-secondary flex-1 sm:flex-none">Batal</a>
+                    <button type="submit" class="btn-primary flex-1 sm:flex-none" wire:loading.attr="disabled" wire:target="submit,invoice,proofTransfer">
+                        <span wire:loading.remove wire:target="submit">Kirim Pengajuan</span>
+                        <span wire:loading wire:target="submit">Mengirim…</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <aside class="grid gap-6 md:grid-cols-2 xl:grid-cols-1 xl:content-start">
+            <div class="card p-5">
+                <h2 class="font-semibold text-slate-900">Apa yang terjadi setelah dikirim?</h2>
+                <ol class="mt-4 space-y-4">
+                    @foreach ([
+                        ['clipboard-check', 'Validasi Admin', 'Admin menerima notifikasi WhatsApp, memeriksa, lalu menyetujui, meminta revisi, atau menolak.'],
+                        ['banknotes', 'Pencairan Finance', 'Setelah disetujui, Finance mentransfer dana dan mengunggah bukti transfer resmi.'],
+                        ['chat', 'Notifikasi ke Anda', 'Anda mendapat WhatsApp saat diminta revisi, ditolak, atau dana sudah cair.'],
+                    ] as $i => [$icon, $title, $text])
+                        <li class="flex gap-3">
+                            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                                <x-icon :name="$icon" class="size-4" />
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">{{ $title }}</p>
+                                <p class="mt-0.5 text-sm text-slate-500">{{ $text }}</p>
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+
+            @if (blank(auth()->user()->phone))
+                <x-alert type="warning" title="Nomor WhatsApp belum diisi">
+                    Anda tidak akan menerima notifikasi status.
+                    <a href="{{ route('profile') }}" wire:navigate class="font-semibold underline underline-offset-2">Lengkapi profil</a>.
+                </x-alert>
+            @endif
+        </aside>
     </div>
 </div>

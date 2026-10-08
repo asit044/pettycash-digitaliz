@@ -65,15 +65,31 @@ class ExportController extends Controller
 
         $total = (float) $rows->sum('nominal');
 
+        $byBudget = $rows
+            ->filter(fn ($row) => filled($row->budget_code))
+            ->groupBy('budget_code')
+            ->map(fn ($group, $code) => [
+                'code' => $code,
+                'description' => $group->first()->budget_description,
+                'count' => $group->count(),
+                'nominal' => (float) $group->sum('nominal'),
+            ])
+            ->sortByDesc('nominal')
+            ->values();
+
         $pdf = Pdf::loadView('exports.rekap', [
             'rows' => $rows,
             'total' => $total,
+            'byBudget' => $byBudget,
             'from' => $request->input('from'),
             'to' => $request->input('to'),
+            'statusLabel' => $request->filled('status') ? RequestStatus::from($request->input('status'))->label() : 'Semua status',
+            'budgetFilter' => $request->input('budget_code') ?: 'Semua kode',
             'signerName' => Setting::get('signer_name', ''),
             'signerTitle' => Setting::get('signer_title', ''),
             'companyName' => Setting::get('company_name', ''),
-        ]);
+            'printedBy' => $request->user()->name,
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('rekap-petty-cash-'.now()->format('Ymd-His').'.pdf');
     }

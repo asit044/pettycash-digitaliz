@@ -3,9 +3,10 @@
 use App\Livewire\Forms\LoginForm;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.guest')] class extends Component
+new #[Layout('layouts.guest')] #[Title('Masuk')] class extends Component
 {
     public LoginForm $form;
 
@@ -25,47 +26,54 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <h1 class="text-2xl font-bold tracking-tight text-slate-900">Selamat datang kembali</h1>
+    <p class="mt-1.5 text-sm text-slate-500">Masuk dengan akun kantor Anda untuk melanjutkan.</p>
 
-    <form wire:submit="login">
-        <!-- Email Address -->
+    <x-auth-session-status class="mt-6" :status="session('status')" />
+
+    <form wire:submit="login" class="mt-8 space-y-5">
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
+            <x-input-label for="email" value="Email" />
+            <x-text-input wire:model="form.email" id="email" class="mt-1.5" type="email" name="email"
+                          placeholder="nama@digitaliz.id" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('form.email')" class="mt-1.5" />
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
+        <div x-data="{ show: false }">
+            <div class="flex items-center justify-between">
+                <x-input-label for="password" value="Password" />
+                @if (Route::has('password.request'))
+                    <a class="text-xs font-semibold text-brand-600 hover:text-brand-700" href="{{ route('password.request') }}" wire:navigate>
+                        Lupa password?
+                    </a>
+                @endif
+            </div>
+            <div class="relative mt-1.5">
+                <x-text-input wire:model="form.password" id="password" class="pr-16" x-bind:type="show ? 'text' : 'password'"
+                              type="password" name="password" required autocomplete="current-password" />
+                <button type="button" x-on:click="show = !show"
+                        class="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                        x-text="show ? 'Sembunyikan' : 'Lihat'">Lihat</button>
+            </div>
+            <x-input-error :messages="$errors->get('form.password')" class="mt-1.5" />
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
-            </label>
-        </div>
+        <label for="remember" class="flex items-center gap-2">
+            <input wire:model="form.remember" id="remember" type="checkbox" name="remember"
+                   class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+            <span class="text-sm text-slate-600">Ingat saya di perangkat ini</span>
+        </label>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
+        <button type="submit" class="btn-primary w-full py-3" wire:loading.attr="disabled">
+            <span wire:loading.remove wire:target="login">Masuk</span>
+            <span wire:loading wire:target="login">Memproses…</span>
+        </button>
     </form>
+
+    @if (Route::has('register'))
+        <p class="mt-8 text-center text-sm text-slate-500">
+            Belum punya akun?
+            <a href="{{ route('register') }}" wire:navigate class="font-semibold text-brand-600 hover:text-brand-700">Daftar sebagai pengaju</a>
+        </p>
+    @endif
 </div>

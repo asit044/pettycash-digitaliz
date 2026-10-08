@@ -66,14 +66,18 @@ class GoogleDriveService implements Drive
             throw new \RuntimeException('Google Drive is not configured.');
         }
 
-        $slug = str()->slug($requesterName) ?: 'tanpa-nama';
-        $folderName = $requestNumber.'-'.$slug;
+        // Convention: <Perusahaan>/<Tahun>/<MM - Bulan>/<Nomor> - <Nama Pengaju>
+        // e.g. "Digitaliz/2026/10 - Oktober/KC-2026-0007 - Budi Santoso".
+        $name = trim(preg_replace('/[\\\\\/:*?"<>|]+/', '', $requesterName)) ?: 'Tanpa Nama';
+        $folderName = $requestNumber.' - '.$name;
         $year = now()->format('Y');
+        $month = now()->format('m').' - '.now()->locale('id')->translatedFormat('F');
 
         $root = $this->rootFolderId ?: $this->rootFolderId();
 
         $yearFolder = $this->findFolderByName($root, $year) ?? $this->createFolder($root, $year);
-        $requestFolder = $this->findFolderByName($yearFolder, $folderName) ?? $this->createFolder($yearFolder, $folderName);
+        $monthFolder = $this->findFolderByName($yearFolder, $month) ?? $this->createFolder($yearFolder, $month);
+        $requestFolder = $this->findFolderByName($monthFolder, $folderName) ?? $this->createFolder($monthFolder, $folderName);
 
         return [
             'id' => $requestFolder,
@@ -157,7 +161,9 @@ class GoogleDriveService implements Drive
             return null;
         }
 
-        Log::warning('Google Drive folder name collision detected for "'.$name.'", using the first result.');
+        if ($matches->count() > 1) {
+            Log::warning('Google Drive folder name collision detected for "'.$name.'", using the first result.');
+        }
 
         return $matches->first()->getId();
     }
